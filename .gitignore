@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Folders
+
+dev/
+data/ImageNet_subset/images/
