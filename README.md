@@ -3,7 +3,7 @@
 The goal of this repository is to explore how adversarial examples work. For that common attack methods are implemented and their steps explained. Detailed results as well as background information can be found [here](https://daved01.github.io/Adversarial_Examples_GANs/).
 
 
-**Important**: In order to use this repository, the data has to be downloaded from [Kaggle](www.kaggle.com).
+**Note**: In order to use this repository, the data has to be downloaded from [Kaggle](https://www.kaggle.com/google-brain/nips-2017-adversarial-learning-development-set?select=images).
 
 
 As dataset 1000 examples from [NIPS 2017: Adversarial Learning Development Set](https://www.kaggle.com/google-brain/nips-2017-adversarial-learning-development-set#categories.csv) are used. These images are similar to the ImageNet dataset.
