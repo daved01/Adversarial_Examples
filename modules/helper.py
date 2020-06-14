@@ -156,6 +156,9 @@ def plot_examples(image_clean, image_adv, conf_clean, conf_adv, label_clean, lab
     name_clean = idx_to_name(label_clean)
     name_adv = idx_to_name(label_adv)
     
+    ## Isloate perturbance
+    perturbance = image_adv - image_clean
+    
     ## Text
     print("\t\t\tClean image\t Adversarial image\n")    
     print("Actual class: \t\t{}\t\t\t{}".format(name_target, name_target ))
@@ -163,9 +166,12 @@ def plot_examples(image_clean, image_adv, conf_clean, conf_adv, label_clean, lab
     print("Confidence: \t\t{:.2f}%\t\t\t\t{:.2f}%\n".format(conf_clean*100, conf_adv*100))
     
     ## Plots
-    plt.subplot(121)
+    plt.subplot(221)
     plt.title("Clean example", fontsize=30)
     show_tensor_image(image_clean)
-    plt.subplot(122)
+    plt.subplot(222)
+    plt.title("Perturbance", fontsize=30)
+    show_tensor_image(perturbance)
+    plt.subplot(223)
     plt.title("Adversarial example", fontsize=30)
     show_tensor_image(image_adv)
