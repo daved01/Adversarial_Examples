@@ -63,9 +63,6 @@ def show_tensor_image(tensor):
     image = np.flipud(np.rot90(image))
     
     image = Image.fromarray(image)
-    
-    ## Show image
-    plt.imshow(image)
         
     return image
 
@@ -75,20 +72,18 @@ def predict(model, image, target_label, return_grad=False):
     Predicts the class of the given image and compares the prediction with the provided label.
     
     Inputs:
-    model           -- net
-    image           -- Input image as tensor of shape (1, 3, 224, 224)
-    target_label    -- Target label as tensor of shape (1)
-    return_grad     -- Returns gradient if set True
+    model             -- net
+    image             -- Input image as tensor of shape (1, 3, 224, 224)
+    target_label      -- Target label as tensor of shape (1)
+    return_grad       -- Returns gradient if set True
     
     Returns:
-    gradient        -- None if return_grad=False. Otherwise the gradient from the prediction 
-                       as a tensor of shape ()
-    top_1           -- Integer of value 1 if class is correct, otherwise 0
-    top_5           -- Integer of value 1 if target class is among the 5 most confident predicted classes
-    confidence      -- Confidence of prediction
-    predicted_label -- Predicted label as integer
+    predicted_classes -- Numpy array of top 5 predicted class indices
+    confidences       -- Numpy array of top 5 confidences in descending order
+    gradient          -- None if return_grad=False. Otherwise the gradient from the prediction
+                         as a tensor of shape ().
     '''      
-        
+     
     if return_grad == True:
         image.requires_grad=True
         prediction = model(image)
@@ -104,42 +99,25 @@ def predict(model, image, target_label, return_grad=False):
     else:           
         gradient = None
         with torch.no_grad():
-            prediction = model(image)
-   
+            prediction = model(image)  
 
-    ## Get class index and confidence for prediction 
+    # Get class index and confidence for prediction 
     prediction = torch.nn.functional.softmax(prediction[0].cpu().detach(), dim=0).numpy()
-    
-    
-    ## Get class label indices corresponding to the five highest confidences
-    predicted_class_index = prediction.argsort()[-5:][::-1]
-
+   
+    # Get top 5 class indices
+    predicted_classes = prediction.argsort()[-5:][::-1]
         
-    ## Get largest confidences
-    confidence = prediction[predicted_class_index[0]]
+    # Get largest confidences
+    confidences = prediction[predicted_classes]
     
-    
-    ## Calculate if prediction is correct        
-    if predicted_class_index[0] == target_label:
-        top_1 = 1
-        
-    else:
-        top_1 = 0
-     
-    
-    ## Calculate top 5 accuracy
-    if target_label.numpy() in predicted_class_index:
-        top_5 = 1
-    else:
-        top_5 = 0
-    
-    
-    return gradient, top_1, top_5, confidence, predicted_class_index[0]
+    return predicted_classes, confidences, gradient
 
 
-def plot_examples(image_clean, image_adv, conf_clean, conf_adv, label_clean, label_adv, label_target):
+def summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, label_adv, label_target, idx,
+                    folder=None):
     '''
-    Plots the clean and adversarial image side-by-side. Prints predicted labels and confidences for both.
+    Summarizes attack by printing info and displaying the image along with the adversary and the isolated
+    perturbance. Saves image to the folder
     
     Inputs:
     image_clean     -- Clean image as tensor of shape (1, 1, 28, 28)
@@ -149,6 +127,8 @@ def plot_examples(image_clean, image_adv, conf_clean, conf_adv, label_clean, lab
     label_clean     -- Predicted label from the clean image
     label_adv       -- Predicted label from the adversarial image
     label_target    -- Target label as tensor of shape (1)
+    idx             -- Sample index used for filename of plot export
+    folder          -- If not None folder to which the image is saved.
     '''
    
     ## Get label names from index
@@ -166,12 +146,27 @@ def plot_examples(image_clean, image_adv, conf_clean, conf_adv, label_clean, lab
     print("Confidence: \t\t{:.2f}%\t\t\t\t{:.2f}%\n".format(conf_clean*100, conf_adv*100))
     
     ## Plots
-    plt.subplot(221)
-    plt.title("Clean example", fontsize=30)
-    show_tensor_image(image_clean)
-    plt.subplot(222)
-    plt.title("Perturbance", fontsize=30)
-    show_tensor_image(perturbance)
-    plt.subplot(223)
-    plt.title("Adversarial example", fontsize=30)
-    show_tensor_image(image_adv)
+    f = plt.figure(figsize=(20,20))
+    
+    ax = f.add_subplot(221)
+    ax2 = f.add_subplot(222)
+    ax3 = f.add_subplot(223)
+    
+    im1 = show_tensor_image(image_clean)
+    im2 = show_tensor_image(perturbance)
+    im3 = show_tensor_image(image_adv)
+    
+    ax.imshow(im1)
+    ax.set_title("Clean example", fontsize=25)
+    ax.axis('off')
+    ax2.imshow(im2)
+    ax2.set_title("Perturbance", fontsize=25)
+    ax2.axis('off')
+    ax3.imshow(im3)
+    ax3.set_title("Adversarial example", fontsize=25)
+    ax3.axis('off')
+    
+    ## Save figure
+    if folder is not None:
+        f.tight_layout()
+        f.savefig("plots/" + str(folder) + "/Sample_" + str(int(idx)) + "_pair.png")
