@@ -43,4 +43,3 @@ def apply_fgsm(image, mean, std, epsilon, grad_x):
     image_tilde = torch.min(image_tilde, max_normed)
     
     return image_tilde
-
