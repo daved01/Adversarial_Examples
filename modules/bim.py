@@ -44,7 +44,7 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
     
     # Calculate normalized alpha
     alpha_normed = [alpha/s for s in std]
-    alpha_normed = torch.tensor(alpha, dtype=torch.float).unsqueeze(-1).unsqueeze(-1)
+    alpha_normed = torch.tensor(alpha_normed, dtype=torch.float).unsqueeze(-1).unsqueeze(-1)
 
     # Calculated normalized epsilon and convert it to a tensor
     eps_normed = [epsilon/s for s in std]
@@ -113,7 +113,7 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons, alpha, fil
     conf = []
     
     for epsilon in epsilons:        
-        num_iterations = int(np.min([np.ceil(epsilon*255*4), np.ceil(1.25+(epsilon*255))]))
+        num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
     
         top1_sub = []
         top5_sub = []
@@ -211,7 +211,7 @@ def BIM_attack_with_selected_samples(min_confidence, max_confidence, data_loader
     for epsilon in epsilons: 
         
         # Compute number of iterations
-        num_iterations = int(np.min([np.ceil(epsilon*255*4), np.ceil(1.25+(epsilon*255))]))
+        num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
         
         acc_sub_adver_top1 = []
         acc_sub_adver_top5 = []
