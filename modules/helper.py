@@ -117,7 +117,7 @@ def summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, 
                     folder=None):
     '''
     Summarizes attack by printing info and displaying the image along with the adversary and the isolated
-    perturbance. Saves image to the folder
+    perturbance. Saves image to the folder.
     
     Inputs:
     image_clean     -- Clean image as tensor of shape (1, 1, 28, 28)

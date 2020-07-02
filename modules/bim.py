@@ -16,9 +16,10 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
     mean           -- Mean
     std            -- Standard deviation
     label          -- Label from image as numpy array
-    alpha          -- Hyperparameter for iterative step
-    epsilon        -- Hyperparameter for sign method
-    num_iterations -- Number of iterations to perform. Default is 10
+    alpha          -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255.
+    epsilon        -- Hyperparameter for sign method. Has to be scaled to epsilon/255.
+    num_iterations -- Number of iterations to perform. Default is 10. It is recommended to use the heuristic from the
+                      paper "Adversarial Examples in the Pysical World" to determine the number of iterations.
     
     Returns:
     image_adver    -- Adversarial image as tensor
@@ -41,6 +42,10 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
     max_normed = [(1-m)/s for m,s in zip(mean,std)]
     max_normed = torch.tensor(max_normed, dtype=torch.float).unsqueeze(-1).unsqueeze(-1)
     
+    # Calculate normalized alpha
+    alpha_normed = [alpha/s for s in std]
+    alpha_normed = torch.tensor(alpha, dtype=torch.float).unsqueeze(-1).unsqueeze(-1)
+
     # Calculated normalized epsilon and convert it to a tensor
     eps_normed = [epsilon/s for s in std]
     eps_normed = torch.tensor(eps_normed, dtype=torch.float).unsqueeze(-1).unsqueeze(-1)
@@ -66,7 +71,7 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
         assert(image_adver.grad is not None)
                
         # Compute X_prime according to equation (1)
-        image_prime = image_adver + alpha * grad_x.detach().sign()
+        image_prime = image_adver + alpha_normed * grad_x.detach().sign()
         assert(torch.equal(image_prime, image_adver) == False)
       
         # Equation 1.2
@@ -80,12 +85,12 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
     return image_adver
 
 
-def compute_all_bim(model, data_loader, predict, mean, std, epsilons):
+def compute_all_bim(model, data_loader, predict, mean, std, epsilons, alpha, filename_ext):
     '''
     Computes top 1, top 5 accuracy and confidence for all samples using BIM 
     in data_loader for each epsilon.
     Does not filter false initial predictions.
-    Saves the results as csv file to: ./results/BIM-all_samples.csv
+    Saves the results as csv file to: ./results/BIM/BIM-all_samples.csv
 
     Inputs:
     model       -- Neural net to attack
@@ -94,15 +99,13 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons):
     mean        -- Mean used in data preprocessing
     std         -- Standard deviation used in data preprocessing
     epsilons    -- List of epsilons for FGSM attack
+    alpha       -- Hyperparameter for BIM. Must be provided as a scaled number alpha/255
 
     Returns:
     top1        -- Top 1 accuracy
     top5        -- Top 5 accuracy
     conf        -- Confidence
-    '''
-    
-    # Set parameters
-    alpha = 1/255   
+    ''' 
 
     # Initialize lists
     top1 = []
@@ -158,6 +161,114 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons):
     results["Top1"] = top1
     results["Top5"] = top5
     results["Confidence"] = conf
-    results.to_csv("results/BIM-all_samples.csv")
+    results.to_csv("results/BIM/BIM-all_samples-part_" + str(filename_ext) + ".csv")
 
     return top1, top5, conf
+
+
+def BIM_attack_with_selected_samples(min_confidence, max_confidence, data_loader, predict, model, mean, std, epsilons, alpha):
+    '''
+    Attacks the model with images from the dataset on which the model achieves clean predictions with
+    confidences in the provided interval [min_confidence, max_confidence]. Only if the original
+    prediction is correct an adversary is generated.
+    
+    Returns an average of the top1, top5 and confidence for all these samples.
+    
+    The number of iterations for the BIM attack is calculated by this function according to the heuristic
+    from the authors of "Adversarial Examples in the Physical World".
+    
+    Inputs:
+    min_confidence -- Minimum confidence to consider
+    max_confidence -- Maximum confidence to consider
+    model          -- Network under attack
+    mean           -- Mean from data preparation
+    std            -- Standard deviation from data preparation
+    epsilons       -- Hyperparameter 1 for attack. Provide scaled as epsilon/255 
+    alpha          -- Hyperparameter 2 for attack. Provide scaled as alpha/255
+    
+    Returns:
+    result         -- Dataframe with top1, top5 and confidence for prediction
+    '''
+    
+    # Take list results
+    result = pd.read_csv("results/Clean-Predictions.csv", index_col=0)
+
+    # Filter correct predictions
+    samples = result.loc[result["Accuracy Top 1"] == 1]
+
+    # Filter confidence
+    samples = samples.loc[samples["Confidence 1"] > min_confidence]
+    samples = samples.loc[samples["Confidence 1"] <= max_confidence]
+
+    # Get samples
+    samples = list(samples.index)
+
+    # Predict
+    accurcy_top1 = []
+    accurcy_top5 = []
+    confidence_adversarial = []
+
+    for epsilon in epsilons: 
+        
+        # Compute number of iterations
+        num_iterations = int(np.min([np.ceil(epsilon*255*4), np.ceil(1.25+(epsilon*255))]))
+        
+        acc_sub_adver_top1 = []
+        acc_sub_adver_top5 = []
+        conf_sub_adver = []    
+        i = 1
+
+        for sample in samples:
+            image_clean, target_class = data_loader.dataset[sample]
+            image_clean.unsqueeze_(0)
+            target_class.unsqueeze_(0)
+
+            clear_output(wait=True)       
+            print("Running for epsilon {:.2f}".format(epsilon*255))
+            print("Sample: "+ str(i) + " of " + str(len(samples)))
+            print("Accuracy top 1 adversarial: {:.2f}".format(np.mean(acc_sub_adver_top1)))
+            print("Accuracy top 5 adversarial: {:.2f}".format(np.mean(acc_sub_adver_top5)))
+            print("Confidence adversarial: {:.2f}".format(np.mean(conf_sub_adver)))
+            print("Number of iterations: {}".format(num_iterations))
+
+            # Predict with clean image
+            predicted_classes, _, gradient = predict(model, image_clean, target_class, return_grad=True)
+            
+            # Generate adversarial example only if initial prediction was correct
+            if predicted_classes[0] == target_class.squeeze().numpy():            
+                
+                # Predict with adversarial image
+                image_adversarial = apply_BIM(model, mean, std, image_clean, target_class, alpha, epsilon, num_iterations=num_iterations)
+                predicted_classes, confidences, _ = predict(model, image_adversarial, target_class, return_grad=False)
+                
+
+                if predicted_classes[0] == target_class.squeeze().numpy():
+                    acc_sub_adver_top1.append(1)
+                else:
+                    acc_sub_adver_top1.append(0)
+                    
+                if target_class.squeeze().numpy() in predicted_classes:
+                    acc_sub_adver_top5.append(1)
+                    
+                else:
+                    acc_sub_adver_top5.append(0)
+                    
+                conf_sub_adver.append(confidences[0])
+
+            i += 1
+
+        # Add accuracies and confidences for clean and adversarial example
+        accurcy_top1.append(np.mean(acc_sub_adver_top1))
+        accurcy_top5.append(np.mean(acc_sub_adver_top5))
+        confidence_adversarial.append(np.mean(conf_sub_adver))
+
+    # Save results
+    result = pd.DataFrame()
+    epsilon = np.array(epsilons) * 255
+    result["Epsilon_255"] = epsilon
+    result["Accuracy Top 1"] = accurcy_top1
+    result["Accuracy Top 5"] = accurcy_top5
+    result["Confidence"] = confidence_adversarial
+    result.to_csv("results/BIM/BIM-Conf" + str(int(min_confidence*100)) + ".csv") 
+    
+    return result
