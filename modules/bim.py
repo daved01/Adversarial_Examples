@@ -11,10 +11,10 @@ def apply_BIM(model, mean, std, image, label, alpha, epsilon, num_iterations=10)
     Applies given number of steps of the Basic Iterative Method (BIM) attack on the input image.
     
     Inputs:
-    model          -- Net under attack
+    model          -- Network under attack
     image          -- Image data as tensor of shape (1, 3, 224, 224)
-    mean           -- Mean
-    std            -- Standard deviation
+    mean           -- Mean from data preparation
+    std            -- Standard deviation from data preparation
     label          -- Label from image as numpy array
     alpha          -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255.
     epsilon        -- Hyperparameter for sign method. Has to be scaled to epsilon/255.
@@ -93,11 +93,11 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons, alpha, fil
     Saves the results as csv file to: ./results/BIM/BIM-all_samples.csv
 
     Inputs:
-    model       -- Neural net to attack
+    model       -- Network under attack
     data_loader -- Pytorch data loader object
-    predict     -- Predict function
-    mean        -- Mean used in data preprocessing
-    std         -- Standard deviation used in data preprocessing
+    predict     -- Predict function from module helper
+    mean        -- Mean from data preparation
+    std         -- Standard deviation from data preparation
     epsilons    -- List of epsilons for FGSM attack
     alpha       -- Hyperparameter for BIM. Must be provided as a scaled number alpha/255
 
@@ -118,7 +118,9 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons, alpha, fil
         top1_sub = []
         top5_sub = []
         conf_sub = []
-                
+
+        counter = 0
+
         for sample in range(1000): 
             clear_output(wait=True)
             print("Running epsilon: {:.2f}".format(epsilon*255))
@@ -149,7 +151,18 @@ def compute_all_bim(model, data_loader, predict, mean, std, epsilons, alpha, fil
                 top5_sub.append(0)
                 
             conf_sub.append(confidences_adv[0])
-        
+
+            counter += 1
+
+            # Save intermediate results
+            if counter % 20==0:
+                temp = pd.DataFrame()
+                temp["top1"] = top1_sub
+                temp["top5"] = top5_sub
+                temp["conf"] = conf_sub
+                temp.to_csv("results/BIM/temp-all_samples-epsilon_" + str(epsilon) + ".csv")
+                counter = 0
+
         # Get averages
         top1.append(np.mean(top1_sub))
         top5.append(np.mean(top5_sub))
@@ -272,3 +285,46 @@ def BIM_attack_with_selected_samples(min_confidence, max_confidence, data_loader
     result.to_csv("results/BIM/BIM-Conf" + str(int(min_confidence*100)) + ".csv") 
     
     return result
+
+
+def compare_examples_bim(data_loader, mean, std, model, predict, summarize_attack, alpha, epsilon, idx, folder=None):
+    '''
+    Generates an example using BIM. Prints infos and plots clean and adversarial image side-by-side.
+    
+    Inputs:
+    data_loader      -- Pytorch data loader object
+    mean             -- Mean from data preparation
+    std              -- Standard deviation from data preparation
+    model            -- Network under attack
+    predict          -- Predict function from module helper
+    summarize_attack -- Function from module helper to describe attack
+    alpha            -- Hyperparameter for BIM
+    epsilon          -- Hyperparameter for BIM
+    idx              -- Index of sample   
+    folder           -- If given image will be saved to this folder
+    '''
+    
+    num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
+    print("Number of iterations: " + str(num_iterations))
+    
+    
+    # Get data
+    image_clean, target_class = data_loader.dataset[idx]
+    image_clean.unsqueeze_(0)
+    target_class.unsqueeze_(0)
+
+    # Predict clean example
+    labels, confidences, gradient = predict(model, image_clean, target_class, return_grad=True)
+    label_clean = labels[0]
+    conf_clean = confidences[0]
+    
+    # Compute adversarial image and predict for it.    
+    image_adv = apply_BIM(model, mean, std, image_clean, target_class, alpha, epsilon, num_iterations=num_iterations)
+    labels, confidences, _ = predict(model, image_adv, target_class, return_grad=False)
+    label_adv = labels[0]
+    conf_adv = confidences[0]
+    
+    
+    # Plot
+    summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, label_adv, target_class, idx,
+                        folder=folder)
