@@ -9,22 +9,22 @@ import torch.nn.functional as F
 from torchvision import transforms
 
 
-def idx_to_name(idx):
+def idx_to_name(class_index):
     '''
     Converts the output class index from the googleNet to the respective name.
     
     Input:
-    idx  -- Class index as integer
+    class_index  -- Class index as integer
     
     Returns:
-    name -- Class names corresponding to idx as string
+    name         -- Class names corresponding to idx as string
     '''
     
-    ## Load dictionary from file    
+    # Load dictionary from file    
     names = pd.read_csv("./data/ImageNet_subset/categories.csv")
     
-    ## Retrieve class name for idx
-    name = names.iloc[idx]["CategoryName"]
+    # Retrieve class name for idx
+    name = names.iloc[class_index]["CategoryName"]
     
     return name
 
@@ -40,11 +40,11 @@ def show_tensor_image(tensor):
     image  -- De-normalized image object
     '''
     
-    ## Detach computation graph and remove batch dimension
+    # Detach computation graph and remove batch dimension
     tensor = tensor.detach().clone()    
     tensor.squeeze_()
     
-    ## De-normalize tensor image
+    # De-normalize tensor image
     invert_preprocess = transforms.Compose([
         transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225], std=[1/0.229, 1/0.224, 1/0.225]),
     ])
@@ -52,14 +52,14 @@ def show_tensor_image(tensor):
     image = invert_preprocess(tensor)      
     image = np.array(image.detach())
     
-    ## Rescale to range 0-255 and convert datatype into 8bit
+    # Rescale to range 0-255 and convert datatype into 8bit
     image = image * 255    
     image = np.uint8(image)
     
-    ## Swap axes to get the expected shape (224, 224, 3)
+    # Swap axes to get the expected shape (224, 224, 3)
     image = np.swapaxes(image, 0, 2)
     
-    ## Rotate and flip the image, then convert to image object
+    # Rotate and flip the image, then convert to image object
     image = np.flipud(np.rot90(image))
     
     image = Image.fromarray(image)

@@ -134,7 +134,7 @@ def single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alp
     return conf_adv, corr_adv, class_name_adv
 
 
-def visualize_attack_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, summarize_attack,folder=None):
+def visualize_attack_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, summarize_attack, folder=None):
     '''
     Generates an example using BIM. Prints infos and plots clean, generated perturbance and resulting adversarial image side-by-side.
     
@@ -417,11 +417,12 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     model             -- Network under attack   
     predict           -- Predict function from module helper   
     alpha             -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255
-    epsilon_conf      --
-    show_tensor_image -- 
-    num_iterations    --
-    save_plot         --
-    print_output      -- 
+    epsilon_conf      -- Epsilon for which to show the distribution in the last plot
+    show_tensor_image -- Converts tensor to image. From helper module
+    idx_to_name       -- Function to return the class name from a class index. From module helper
+    num_iterations    -- Number of iterations for BIM. Calculates the recommended number if not given
+    save_plot         -- Saves the plot to folder BIM if True
+    print_output      -- Prints stats if True
     '''  
 
     # Get data
