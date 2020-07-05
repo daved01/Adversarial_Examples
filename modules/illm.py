@@ -8,9 +8,9 @@ from IPython.display import clear_output
 import time
 
 
-def attack_BIM(mean, std, model, image, class_index, epsilon, alpha, num_iterations=10):
+def attack_ILLM(mean, std, model, image, class_index, epsilon, alpha, num_iterations=10):
     '''
-    Applies given number of steps of the Basic Iterative Method (BIM) attack on the input image.
+    Applies given number of steps of the Iterative Least Likely Method (ILLM) attack on the input image.
     
     Inputs:
     mean           -- Mean from data preparation
@@ -34,7 +34,7 @@ def attack_BIM(mean, std, model, image, class_index, epsilon, alpha, num_iterati
     assert(image.shape == torch.Size([1, 3, 224, 224]))
     assert(class_index.shape == torch.Size([1]))
     
-    # Initialize adversarial image as image according to equation 2.1
+    # Initialize adversarial image as image according to equation 3.1
     image_adver = image.clone()    
     
     # Calculate normalized range [0, 1] and convert them to tensors
@@ -62,32 +62,34 @@ def attack_BIM(mean, std, model, image, class_index, epsilon, alpha, num_iterati
         image_adver = image_adver.clone().detach()
         image_adver.requires_grad=True
         
-        # Compute cost with example image_adversarial        
-        pred = model(image_adver)        
-        loss = F.nll_loss(pred, class_index)        
+        # Compute gradient of cost with least likely class     
+        pred = model(image_adver)
+        least_likeliest_class = torch.argmin(pred)
+        least_likeliest_class.unsqueeze_(0)     
+        loss = F.nll_loss(pred, least_likeliest_class)        
         model.zero_grad()        
         loss.backward()        
         grad_x = image_adver.grad.data       
-        
+
         # Check if gradient exists
         assert(image_adver.grad is not None)
                
-        # Compute X_prime according to equation 2.2
-        image_prime = image_adver + alpha_normed * grad_x.detach().sign()
+        # Compute X_prime according to equation 3.2
+        image_prime = image_adver - alpha_normed * grad_x.detach().sign()
         assert(torch.equal(image_prime, image_adver) == False)
       
-        # Equation 2.3 part 1
+        # Equation 3.3 part 1
         third_part_1 = torch.max(image_minus, image_prime)
         third_part = torch.max(zero_normed, third_part_1)
               
-        # Equation 2.3 part 2
+        # Equation 3.3 part 2
         image_adver = torch.min(image_plus, third_part)                 
         image_adver = torch.min(max_normed, image_adver)                        
 
     return image_adver
 
-
-def single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations):
+# TODO
+def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations):
     '''
     Computes BIM attack and returns info about success.
     
@@ -134,9 +136,9 @@ def single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alp
     return conf_adv, corr_adv, class_name_adv
 
 
-def visualize_attack_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, summarize_attack, folder=None):
+def visualize_attack_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, summarize_attack, folder=None):
     '''
-    Generates an adversary using BIM. Prints infos and plots clean, generated perturbance and resulting adversarial image side-by-side.
+    Generates an adversary using ILLM. Prints infos and plots clean, generated perturbance and resulting adversarial image side-by-side.
     
     Inputs:
     data_loader      -- Pytorch data loader object
@@ -166,7 +168,7 @@ def visualize_attack_BIM(data_loader, mean, std, model, predict, epsilon, alpha,
     conf_clean = confidences[0]
     
     # Compute adversarial image and predict for it.
-    image_adv = attack_BIM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
+    image_adv = attack_ILLM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
     labels, confidences, _ = predict(model, image_adv, target_class, return_grad=False)
     label_adv = labels[0]
     conf_adv = confidences[0]
@@ -176,12 +178,12 @@ def visualize_attack_BIM(data_loader, mean, std, model, predict, epsilon, alpha,
                         folder=folder)
 
 
-def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alpha, filename_ext, temp_filename, restart=None):
+def all_samples_attack_ILLM(data_loader, mean, std, model, predict, epsilons, alpha, filename_ext, restart=None):
     '''
-    Computes top 1, top 5 accuracy and confidence for all samples using BIM 
+    Computes top 1, top 5 accuracy and confidence for all samples using ILLM 
     in data_loader for each epsilon.
     Does not filter false initial predictions.
-    Saves the results as csv file to: ./results/BIM/BIM-all_samples.csv
+    Saves the results as csv file to: ./results/ILLM/ILLM-all_samples.csv
 
     Inputs:
     data_loader   -- Pytorch data loader object
@@ -192,7 +194,6 @@ def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alp
     epsilons      -- List of hyperparameter for sign method. Has to be scaled to epsilon/255
     alpha         -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255
     filename_ext  -- Extension to file name
-    temp_filename -- Name of temp file with intermediate results
     restart       -- List to use previous partial results. 
                      Format: [<filename>, <[remaining_epsilons]>]
 
@@ -222,7 +223,7 @@ def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alp
         calculated_samples = 0
         
         if restart != None:
-            val = pd.read_csv("results/BIM/temp-all_samples-epsilon_" + str(restart[0]) + ".csv", index_col=0)
+            val = pd.read_csv("results/ILLM/temp-all_samples-epsilon_" + str(restart[0]) + ".csv", index_col=0)
             top1_sub = list(val["top1"])
             top5_sub = list(val["top5"])
             conf_sub = list(val["conf"])
@@ -250,7 +251,7 @@ def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alp
             _, _, gradient = predict(model, image_clean, target_class, return_grad=True)
 
             # Compute adversarial image and predict for it.  
-            image_adv = attack_BIM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
+            image_adv = attack_ILLM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
             class_adv, confidences_adv, _ = predict(model, image_adv, target_class, return_grad=False)
             
             # Compute accuracies:
@@ -275,7 +276,7 @@ def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alp
                 temp["top1"] = top1_sub
                 temp["top5"] = top5_sub
                 temp["conf"] = conf_sub
-                temp.to_csv("results/BIM/temp-all_samples-epsilon_" + str(epsilon*255) + "-" + str(temp_filename) + ".csv")
+                temp.to_csv("results/ILLM/temp-all_samples-epsilon_" + str(epsilon*255) + "-range_" + str(filename_ext) + ".csv")
                 counter = 0
 
         # Get averages
@@ -291,12 +292,12 @@ def all_samples_attack_BIM(data_loader, mean, std, model, predict, epsilons, alp
     results["Top1"] = top1
     results["Top5"] = top5
     results["Confidence"] = conf
-    results.to_csv("results/BIM/BIM-all_samples-part_" + str(filename_ext) + ".csv")
+    results.to_csv("results/ILLM/ILLM-all_samples-range_" + str(filename_ext) + ".csv")
 
     return top1, top5, conf
 
 
-def confidence_range_attack_BIM(data_loader, mean, std, model, predict, epsilons, alpha, min_confidence, max_confidence):
+def confidence_range_attack_ILLM(data_loader, mean, std, model, predict, epsilons, alpha, min_confidence, max_confidence):
     '''
     Attacks the model with images from the dataset on which the model achieves clean predictions with
     confidences in the provided interval [min_confidence, max_confidence]. Only if the original
@@ -304,7 +305,7 @@ def confidence_range_attack_BIM(data_loader, mean, std, model, predict, epsilons
     
     Returns an average of the top1, top5 and confidence for all these samples.
     
-    The number of iterations for the BIM attack is calculated by this function according to the heuristic
+    The number of iterations for the ILLM attack is calculated by this function according to the heuristic
     from the authors of "Adversarial Examples in the Physical World".
     
     Inputs:
@@ -370,7 +371,7 @@ def confidence_range_attack_BIM(data_loader, mean, std, model, predict, epsilons
             if predicted_classes[0] == target_class.squeeze().numpy():            
                 
                 # Predict with adversarial image
-                image_adversarial = attack_BIM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
+                image_adversarial = attack_ILLM(mean, std, model, image_clean, target_class, epsilon, alpha, num_iterations=num_iterations)
                 predicted_classes, confidences, _ = predict(model, image_adversarial, target_class, return_grad=False)
                 
 
@@ -401,12 +402,12 @@ def confidence_range_attack_BIM(data_loader, mean, std, model, predict, epsilons
     result["Accuracy Top 1"] = accurcy_top1
     result["Accuracy Top 5"] = accurcy_top5
     result["Confidence"] = confidence_adversarial
-    result.to_csv("results/BIM/BIM-Conf" + str(int(min_confidence*100)) + ".csv") 
+    result.to_csv("results/ILLM/ILLM-Conf" + str(int(min_confidence*100)) + ".csv") 
     
     return result
 
-
-def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, num_iterations=None, save_plot=False, print_output=True):
+# TODO
+def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, num_iterations=None, save_plot=False, print_output=True):
     '''
     Generates 4 plots: Image, conf over epsilon, top 5 conf for clean image, top 5 conf for adversarial image.
     
