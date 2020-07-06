@@ -406,10 +406,11 @@ def confidence_range_attack_BIM(data_loader, mean, std, model, predict, epsilons
     return result
 
 
-def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, num_iterations=None, save_plot=False, print_output=True):
+def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, fixed_num_iter=None, save_plot=False, print_output=True):
     '''
-    Generates 4 plots: Image, conf over epsilon, top 5 conf for clean image, top 5 conf for adversarial image.
-    
+    Generates 4 plots: Image, confidence over epsilon, top 5 confidence for clean image, top 5 confidence for adversarial image.
+    The epsilons are: 0, 0.5/255, 1/255, 2/255, 4/255, 8/255, 12/255, 16/255, 20/255
+
     Inputs:
     data_loader       -- Pytorch data loader object
     mean              -- Mean from data preparation
@@ -420,7 +421,7 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     epsilon_conf      -- Epsilon for which to show the distribution in the last plot
     show_tensor_image -- Converts tensor to image. From helper module
     idx_to_name       -- Function to return the class name from a class index. From module helper
-    num_iterations    -- Number of iterations for BIM. Calculates the recommended number if not given
+    fixed_num_iter    -- Fixed number of iterations for BIM. Calculates the recommended number for each epsilon if not given
     save_plot         -- Saves the plot to folder BIM if True
     print_output      -- Prints stats if True
     '''  
@@ -438,18 +439,20 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     conf_list = []
     acc_list = []
 
-    print("Epsilon \t Accuracy \t Confidence \t Label")
-
+    print("Epsilon \t Iterations \t Accuracy \t Confidence \t Label")
+    
     for epsilon in epsilons:
-        if num_iterations == None:
+        if fixed_num_iter == None:
             num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
+        else:
+            num_iterations = fixed_num_iter
         
         conf_adv, acc, predicted_label = single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations)
         conf_list.append(conf_adv)
         acc_list.append(acc)
         
         if print_output == True:
-            print(str(epsilon*255) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
+            print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
     
     # Compute top 5 confidences for selected epsilon
     ## Number of iterations
@@ -492,3 +495,100 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     if save_plot is True:
         fig.tight_layout()
         fig.savefig("plots/BIM/Individual_Images-Sample_" + str(sample) + ".png")
+
+
+def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_alphas, four_num_iter, sample, 
+                                show_tensor_image, idx_to_name, save_plot=False, print_output=False):
+    '''
+    Generates 12 plots of confidences over epsilons for BIM attacks for provided combination of 
+    three alphas and and four number_iterations.
+    
+    Rows:             Increasing number of iteratiosn from left to right
+    Columns:          Increasing number of alpha from top to bottom.
+    The epsilons are: 0, 0.5/255, 1/255, 2/255, 4/255, 8/255, 12/255, 16/255, 20/255
+
+    Inputs:
+    data_loader       -- Pytorch data loader object
+    mean              -- Mean from data preparation
+    std               -- Standard deviation from data preparation
+    model             -- Network under attack   
+    predict           -- Predict function from module helper   
+    three_alpha       -- List of three alphas. Each has to be scaled to alpha/255
+    four_num_iter     -- List of four number of iterations
+    sample            -- Image to be used for attack
+    show_tensor_image -- Converts tensor to image. From helper module
+    idx_to_name       -- Function to return the class name from a class index. From module helper
+    save_plot         -- Saves the plot as "BIM-Hyperparameter_variation_<sample>.png" to folder BIM if True
+    print_output      -- Prints stats if True
+    '''
+    
+    # Check inputs   
+    if len(three_alphas) != 3:
+        print("Exactly four alphas required!")
+
+    if len(four_num_iter) != 4:
+        print("Exactly for num_iterations required!")
+    
+    
+    # Get data
+    image_clean, class_index = data_loader.dataset[sample]
+    image_clean.unsqueeze_(0)
+    class_index.unsqueeze_(0)
+ 
+    # Predict clean example
+    _, confidences_clean, gradient = predict(model, image_clean, class_index, return_grad=True)
+
+    epsilons = [0, 0.5/255, 1/255, 2/255, 4/255, 8/255, 12/255, 16/255, 20/255]
+
+    
+    # Dictionary to save results. Key format: "<row>_<column>"
+    conf_dict = {}
+    acc_dict = {}
+    
+    # rows
+    for i in range(3):
+        # columns
+        for j in range(4):
+    
+            conf_list = []
+            acc_list = []
+
+            # Get hyperparameters
+            alpha = three_alphas[i]
+            curr_num_iter = four_num_iter[j]
+
+            print("Running alpha {} with {} iterations". format(alpha*255, curr_num_iter))
+            #print("Epsilon \t Accuracy \t Confidence \t Label")
+
+            for epsilon in epsilons:
+                conf_adv, acc, predicted_label = single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, curr_num_iter)
+                conf_list.append(conf_adv)
+                acc_list.append(acc)
+
+                if print_output == True:
+                    print(str(epsilon*255) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
+
+            conf_dict[str(i) + "_" + str(j)] = conf_list
+            acc_dict[str(i) + "_" + str(j)] = acc_list
+    
+    print("Done!\nGenerating plot...")
+    
+    
+    # Plot
+    ## Rows: alphas, columns: number of itertions
+    fig, axs = plt.subplots(3, 4, sharex=True, sharey=True ,figsize=(20,15))
+
+    for i in range(3):
+        for j in range(4):
+
+            conf_list = conf_dict[str(i) + "_" + str(j)]
+            acc_list = acc_dict[str(i) + "_" + str(j)]
+
+            axs[i, j].plot(np.array(epsilons)*255, conf_list, "-^", color='orange', label='Confidence')
+            axs[i, j].plot(np.array(epsilons)*255, acc_list, "s", color='navy', label='1: Corr, 0: False')
+            axs[i, j].set_ylim(0, 1.1)
+
+    # Create the legend and save
+    axs[2, 3].legend(['Confidence', '1: Corr, 0: False'], loc='lower right')
+    fig.tight_layout()
+    fig.savefig("plots/BIM/BIM-Hyperparameter_variation_" + str(sample) + ".png")
