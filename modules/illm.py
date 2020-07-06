@@ -88,7 +88,7 @@ def attack_ILLM(mean, std, model, image, class_index, epsilon, alpha, num_iterat
 
     return image_adver
 
-# TODO
+
 def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations):
     '''
     Computes ILLM attack and returns info about success.
@@ -407,11 +407,11 @@ def confidence_range_attack_ILLM(data_loader, mean, std, model, predict, epsilon
     return result
 
 
-#TODO
-def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, num_iterations=None, save_plot=False, print_output=True):
+def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, fixed_num_iter=None, save_plot=False, print_output=True):
     '''
-    Generates 4 plots: Image, conf over epsilon, top 5 conf for clean image, top 5 conf for adversarial image.
-    
+    Generates 4 plots: Image, confidence over epsilon, top 5 confidence for clean image, top 5 confidence for adversarial image.
+    The epsilons are: 0, 0.5/255, 1/255, 2/255, 4/255, 8/255, 12/255, 16/255, 20/255
+
     Inputs:
     data_loader       -- Pytorch data loader object
     mean              -- Mean from data preparation
@@ -422,7 +422,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     epsilon_conf      -- Epsilon for which to show the distribution in the last plot
     show_tensor_image -- Converts tensor to image. From helper module
     idx_to_name       -- Function to return the class name from a class index. From module helper
-    num_iterations    -- Number of iterations for ILLM. Calculates the recommended number if not given
+    fixed_num_iter    -- Fixed number of iterations for ILLM. Calculates the recommended number for each epsilon if not given
     save_plot         -- Saves the plot to folder ILLM if True
     print_output      -- Prints stats if True
     '''  
@@ -440,18 +440,20 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     conf_list = []
     acc_list = []
 
-    print("Epsilon \t Accuracy \t Confidence \t Label")
-
+    print("Epsilon \t Iterations \t Accuracy \t Confidence \t Label")
+    
     for epsilon in epsilons:
-        if num_iterations == None:
+        if fixed_num_iter == None:
             num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
+        else:
+            num_iterations = fixed_num_iter
         
         conf_adv, acc, predicted_label = single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations)
         conf_list.append(conf_adv)
         acc_list.append(acc)
         
         if print_output == True:
-            print(str(epsilon*255) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
+            print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
     
     # Compute top 5 confidences for selected epsilon
     ## Number of iterations
@@ -493,4 +495,4 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     
     if save_plot is True:
         fig.tight_layout()
-        fig.savefig("plots/ILLM/Individual_Images-Sample_" + str(sample) + ".png")
+        fig.savefig("plots/ILLM/ILLM-Individual_Images-Sample_" + str(sample) + ".png")
