@@ -91,7 +91,7 @@ def attack_ILLM(mean, std, model, image, class_index, epsilon, alpha, num_iterat
 # TODO
 def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations):
     '''
-    Computes BIM attack and returns info about success.
+    Computes ILLM attack and returns info about success.
     
     Inputs:
     data_loader    -- Pytorch data loader object
@@ -103,7 +103,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     alpha          -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255
     sample         -- Index of sample 
     idx_to_name    -- Function to return the class name from a class index. From module helper
-    num_iterations -- Number of iterations to perform the BIM with
+    num_iterations -- Number of iterations to perform the ILLM with
     
     Returns:
     conf_adv       -- Confidence of adversary
@@ -121,7 +121,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     _, _, gradient = predict(model, image_clean, class_index, return_grad=True)
               
     # Compute adversarial image and predict for it.
-    image_adv = attack_BIM(mean, std, model, image_clean, class_index, epsilon, alpha, num_iterations=num_iterations)    
+    image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon, alpha, num_iterations=num_iterations)    
     predicted_classes, confidences, _ = predict(model, image_adv, class_index, return_grad=False)
     
     
@@ -406,7 +406,8 @@ def confidence_range_attack_ILLM(data_loader, mean, std, model, predict, epsilon
     
     return result
 
-# TODO
+
+#TODO
 def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, epsilon_conf, show_tensor_image, idx_to_name, num_iterations=None, save_plot=False, print_output=True):
     '''
     Generates 4 plots: Image, conf over epsilon, top 5 conf for clean image, top 5 conf for adversarial image.
@@ -421,8 +422,8 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     epsilon_conf      -- Epsilon for which to show the distribution in the last plot
     show_tensor_image -- Converts tensor to image. From helper module
     idx_to_name       -- Function to return the class name from a class index. From module helper
-    num_iterations    -- Number of iterations for BIM. Calculates the recommended number if not given
-    save_plot         -- Saves the plot to folder BIM if True
+    num_iterations    -- Number of iterations for ILLM. Calculates the recommended number if not given
+    save_plot         -- Saves the plot to folder ILLM if True
     print_output      -- Prints stats if True
     '''  
 
@@ -445,7 +446,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
         if num_iterations == None:
             num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
         
-        conf_adv, acc, predicted_label = single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations)
+        conf_adv, acc, predicted_label = single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations)
         conf_list.append(conf_adv)
         acc_list.append(acc)
         
@@ -457,7 +458,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     if num_iterations == None:
         num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
 
-    image_adv = attack_BIM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
+    image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
     
     _, confidences_adv, _ = predict(model, image_adv, class_index, return_grad=False)
     
@@ -492,4 +493,4 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     
     if save_plot is True:
         fig.tight_layout()
-        fig.savefig("plots/BIM/Individual_Images-Sample_" + str(sample) + ".png")
+        fig.savefig("plots/ILLM/Individual_Images-Sample_" + str(sample) + ".png")
