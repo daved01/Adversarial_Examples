@@ -137,7 +137,7 @@ def get_attack_series(data_loader, mean, std, model, predict, epsilons, sample, 
       x_offset += im.size[0]
 
     if save is True:
-        output.save("plots/FGSM/Sample_" + str(sample) + "_series.png")
+        output.save("plots/FGSM/FGSM-sample_" + str(sample) + "_series.png")
     
     return output
 
@@ -231,7 +231,7 @@ def confidence_range_attack_FGSM(data_loader, mean, std, model, predict, min_con
     result["Accuracy Top 1"] = accurcy_top1
     result["Accuracy Top 5"] = accurcy_top5
     result["Confidence"] = confidence_adversarial
-    result.to_csv("results/FGSM/FGSM-Conf" + str(int(min_confidence*100)) + ".csv") 
+    result.to_csv("results/FGSM/FGSM-conf" + str(int(min_confidence*100)) + ".csv") 
     
     return result
 
@@ -356,7 +356,7 @@ def analyze_attack_FGSM(data_loader, mean, std, model, predict, sample, epsilon_
     
     if save_plot is True:
         fig.tight_layout()
-        fig.savefig("plots/FGSM/Individual_Images-Sample_" + str(sample) + ".png")
+        fig.savefig("plots/FGSM/FGSM-individual_images-sample_" + str(sample) + ".png")
 
 
 def all_samples_attack_FGSM(model, data_loader, predict, mean, std, epsilons):
@@ -432,7 +432,7 @@ def all_samples_attack_FGSM(model, data_loader, predict, mean, std, epsilons):
     results["Top1"] = top1
     results["Top5"] = top5
     results["Confidence"] = conf
-    results.to_csv("results/FGSM-all_samples.csv")
+    results.to_csv("results/FGSM/FGSM-all_samples.csv")
     
     return top1, top5, conf
 
@@ -470,6 +470,5 @@ def iterate_epsilons_FGSM(data_loader, mean, std, model, predict, sample, idx_to
     plt.plot(np.array(epsilons)*255, acc_list, "s", color='navy', label='1: Corr, 0: False')
     plt.xlabel("Epsilon *255", fontsize=15)
     plt.legend()
-    plt.savefig("plots/FGSM/Confidence_Levels-Sample" + str(sample)+ ".pdf")
-    plt.savefig("plots/FGSM/png/Confidence_Levels-Sample" + str(sample)+ ".png")
+    plt.savefig("plots/FGSM/FGSM-confidence_levels-sample" + str(sample)+ ".png")
     plt.show()

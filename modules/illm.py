@@ -495,4 +495,4 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     
     if save_plot is True:
         fig.tight_layout()
-        fig.savefig("plots/ILLM/ILLM-Individual_Images-Sample_" + str(sample) + ".png")
+        fig.savefig("plots/ILLM/ILLM-individual_images-sample_" + str(sample) + ".png")

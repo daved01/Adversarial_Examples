@@ -169,4 +169,4 @@ def summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, 
     ## Save figure
     if folder is not None:
         f.tight_layout()
-        f.savefig("plots/" + str(folder) + "/Sample_" + str(int(idx)) + "_pair.png")
+        f.savefig("plots/" + str(folder) + "/" + str(folder) + "-sample_" + str(int(idx)) + "_pair.png")

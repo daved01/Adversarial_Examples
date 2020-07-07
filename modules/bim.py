@@ -494,7 +494,7 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     
     if save_plot is True:
         fig.tight_layout()
-        fig.savefig("plots/BIM/BIM-Individual_Images-Sample_" + str(sample) + ".png")
+        fig.savefig("plots/BIM/BIM-individual_images-sample_" + str(sample) + ".png")
 
 
 def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_alphas, four_num_iter, sample, 
@@ -591,4 +591,4 @@ def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_al
     # Create the legend and save
     axs[2, 3].legend(['Confidence', '1: Corr, 0: False'], loc='lower right')
     fig.tight_layout()
-    fig.savefig("plots/BIM/BIM-Hyperparameter_variation_" + str(sample) + ".png")
+    fig.savefig("plots/BIM/BIM-hyperparameter_variation_" + str(sample) + ".png")
