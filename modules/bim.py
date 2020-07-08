@@ -577,7 +577,10 @@ def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_al
     # Plot
     ## Rows: alphas, columns: number of itertions
     fig, axs = plt.subplots(3, 4, sharex=True, sharey=True ,figsize=(20,15))
-
+    row_names = ["1", "2", "3"]
+    col_names = ["1", "2", "3", "4"]
+    
+    
     for i in range(3):
         for j in range(4):
 
@@ -587,8 +590,19 @@ def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_al
             axs[i, j].plot(np.array(epsilons)*255, conf_list, "-^", color='orange', label='Confidence')
             axs[i, j].plot(np.array(epsilons)*255, acc_list, "s", color='navy', label='1: Corr, 0: False')
             axs[i, j].set_ylim(0, 1.1)
-
+    
+    
+    # Labels
+    axs[0, 0].set_ylabel("alpha 1", fontsize="15")
+    axs[1, 0].set_ylabel("alpha 10", fontsize="15")
+    axs[2, 0].set_ylabel("alpha 68", fontsize="15")
+    axs[2, 0].set_xlabel("num_iter 1", fontsize="15")
+    axs[2, 1].set_xlabel("num_iter 10", fontsize="15")
+    axs[2, 2].set_xlabel("num_iter 5", fontsize="15")
+    axs[2, 3].set_xlabel("num_iter 24", fontsize="15")
+    
     # Create the legend and save
     axs[2, 3].legend(['Confidence', '1: Corr, 0: False'], loc='lower right')
+    
     fig.tight_layout()
     fig.savefig("plots/BIM/BIM-hyperparameter_variation_" + str(sample) + ".png")

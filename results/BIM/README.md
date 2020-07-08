@@ -4,6 +4,8 @@ Files
 
 BIM-all_samples -- Attacks with all 1000 images, no matter if clean prediction is correct or not
 
+                         -- Adversarial confidences for selected epsilons. Is 0 if initial prediction was false.
+
 BIM-Conf40      -- Attacks with images with initial confidence of 40% - 60%
 
 BIM-Conf85      -- Attacks with images with initial confidence of 85% - 90%

@@ -5,9 +5,8 @@ Files
 
 FGSM-all_samples          -- Attacks with all 1000 images, no matter if clean prediction is correct or not
 
-FGSM-accuracies-corr_only -- 
+FGSM-accuracies-corr_only -- Adversarial confidences for selected epsilons. Is 0 if initial prediction was false.
 
-FGSM-accuracies           -- 
 
 FGSM-Conf40               -- Attacks with images with initial confidence of 40% - 60%
 

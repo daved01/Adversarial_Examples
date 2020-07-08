@@ -97,7 +97,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     data_loader    -- Pytorch data loader object
     mean           -- Mean from data preparation
     std            -- Standard deviation from data preparation
-    model          -- Network under attack   
+    model          -- Network under attack 
     predict        -- Predict function from module helper   
     epsilon        -- Hyperparameter for sign method. Has to be scaled to epsilon/255
     alpha          -- Hyperparameter for iterative step as absolute value. Has to be scaled to alpha/255
@@ -110,7 +110,6 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     corr           -- Integer to indicate if predicted class is correct (1) or not (0)
     class_name_adv -- Label of adversarial class
     '''
-
 
     # Get data
     image_clean, class_index = data_loader.dataset[sample]
