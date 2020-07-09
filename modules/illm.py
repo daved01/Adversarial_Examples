@@ -107,7 +107,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     
     Returns:
     conf_adv       -- Confidence of adversary
-    corr           -- Integer to indicate if predicted class is correct (1) or not (0)
+    corr           -- Integer to indicate if predicted class with the adversary is correct (1) or not (0)
     class_name_adv -- Label of adversarial class
     '''
 
@@ -115,10 +115,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     image_clean, class_index = data_loader.dataset[sample]
     image_clean.unsqueeze_(0)
     class_index.unsqueeze_(0)
-
-    # Predict clean example
-    _, _, gradient = predict(model, image_clean, class_index, return_grad=True)
-              
+             
     # Compute adversarial image and predict for it.
     image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon, alpha, num_iterations=num_iterations)    
     predicted_classes, confidences, _ = predict(model, image_adv, class_index, return_grad=False)
@@ -467,7 +464,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     # Plot
     samples = [1, 2, 3, 4, 5]
     
-    fig, axs = plt.subplots(1, 4, figsize=(20,5))
+    fig, axs = plt.subplots(1, 4, figsize=(15,3.75))
 
     ## First image: Clean image
     im = show_tensor_image(image_clean)
@@ -479,18 +476,24 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     axs[1].plot(np.array(epsilons)*255, conf_list, "-^", color='orange', label='Confidence')
     axs[1].plot(np.array(epsilons)*255, acc_list, "s", color='navy', label='1: Corr, 0: False')
     axs[1].set_ylim(0, 1.1)
-    axs[1].set_xlabel("Epsilon *255", fontsize=10)
+    axs[1].xaxis.set_tick_params(labelsize=13)
+    axs[1].yaxis.set_tick_params(labelsize=13)
+    axs[1].set_xlabel("Epsilon * 255", fontsize=15)
     axs[1].legend()
 
     ## Third image: Clean image top 5 confidence
     axs[2].bar(samples, confidences_clean, color='orange')
     axs[2].set_ylim(0, 1.1)
-    axs[2].set_xlabel("Epsilon *255", fontsize=10)
+    axs[2].xaxis.set_tick_params(labelsize=13)
+    axs[2].yaxis.set_tick_params(labelsize=13)
+    axs[2].set_xlabel("Epsilon * 255", fontsize=15)
 
     ## Fourth image: Adversarial image selected epsilon top 5 confidence
     axs[3].bar(samples, confidences_adv, color='orange')
     axs[3].set_ylim(0, 1.1)
-    axs[3].set_xlabel("Epsilon *255", fontsize=10)
+    axs[3].xaxis.set_tick_params(labelsize=13)
+    axs[3].yaxis.set_tick_params(labelsize=13)
+    axs[3].set_xlabel("Epsilon * 255", fontsize=15)
     
     if save_plot is True:
         fig.tight_layout()

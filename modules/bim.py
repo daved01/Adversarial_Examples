@@ -105,7 +105,7 @@ def single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alp
     
     Returns:
     conf_adv       -- Confidence of adversary
-    corr           -- Integer to indicate if predicted class is correct (1) or not (0)
+    corr           -- Integer to indicate if predicted class with the adversary is correct (1) or not (0)
     class_name_adv -- Label of adversarial class
     '''
 
@@ -114,9 +114,6 @@ def single_attack_stats_BIM(data_loader, mean, std, model, predict, epsilon, alp
     image_clean, class_index = data_loader.dataset[sample]
     image_clean.unsqueeze_(0)
     class_index.unsqueeze_(0)
-
-    # Predict clean example
-    _, _, gradient = predict(model, image_clean, class_index, return_grad=True)
               
     # Compute adversarial image and predict for it.
     image_adv = attack_BIM(mean, std, model, image_clean, class_index, epsilon, alpha, num_iterations=num_iterations)    
@@ -467,7 +464,7 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     # Plot
     samples = [1, 2, 3, 4, 5]
     
-    fig, axs = plt.subplots(1, 4, figsize=(20,5))
+    fig, axs = plt.subplots(1, 4, figsize=(15,3.75))
 
     ## First image: Clean image
     im = show_tensor_image(image_clean)
@@ -479,18 +476,24 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     axs[1].plot(np.array(epsilons)*255, conf_list, "-^", color='orange', label='Confidence')
     axs[1].plot(np.array(epsilons)*255, acc_list, "s", color='navy', label='1: Corr, 0: False')
     axs[1].set_ylim(0, 1.1)
-    axs[1].set_xlabel("Epsilon *255", fontsize=10)
+    axs[1].xaxis.set_tick_params(labelsize=13)
+    axs[1].yaxis.set_tick_params(labelsize=13)
+    axs[1].set_xlabel("Epsilon * 255", fontsize=15)
     axs[1].legend()
 
     ## Third image: Clean image top 5 confidence
     axs[2].bar(samples, confidences_clean, color='orange')
     axs[2].set_ylim(0, 1.1)
-    axs[2].set_xlabel("Epsilon *255", fontsize=10)
+    axs[2].xaxis.set_tick_params(labelsize=13)
+    axs[2].yaxis.set_tick_params(labelsize=13)
+    axs[2].set_xlabel("Epsilon * 255", fontsize=15)
 
     ## Fourth image: Adversarial image selected epsilon top 5 confidence
     axs[3].bar(samples, confidences_adv, color='orange')
     axs[3].set_ylim(0, 1.1)
-    axs[3].set_xlabel("Epsilon *255", fontsize=10)
+    axs[3].xaxis.set_tick_params(labelsize=13)
+    axs[3].yaxis.set_tick_params(labelsize=13)
+    axs[3].set_xlabel("Epsilon * 255", fontsize=15)
     
     if save_plot is True:
         fig.tight_layout()
@@ -576,7 +579,7 @@ def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_al
     
     # Plot
     ## Rows: alphas, columns: number of itertions
-    fig, axs = plt.subplots(3, 4, sharex=True, sharey=True ,figsize=(20,15))
+    fig, axs = plt.subplots(3, 4, sharex=True, sharey=True ,figsize=(15,10))
     row_names = ["1", "2", "3"]
     col_names = ["1", "2", "3", "4"]
     
@@ -593,13 +596,13 @@ def compute_hyperparameter_plot(data_loader, mean, std, model, predict, three_al
     
     
     # Labels
-    axs[0, 0].set_ylabel("alpha 1", fontsize="15")
-    axs[1, 0].set_ylabel("alpha 10", fontsize="15")
-    axs[2, 0].set_ylabel("alpha 68", fontsize="15")
-    axs[2, 0].set_xlabel("num_iter 1", fontsize="15")
-    axs[2, 1].set_xlabel("num_iter 10", fontsize="15")
-    axs[2, 2].set_xlabel("num_iter 5", fontsize="15")
-    axs[2, 3].set_xlabel("num_iter 24", fontsize="15")
+    axs[0, 0].set_ylabel("alpha 1", fontsize="16")
+    axs[1, 0].set_ylabel("alpha 10", fontsize="16")
+    axs[2, 0].set_ylabel("alpha 68", fontsize="16")
+    axs[2, 0].set_xlabel("num_iter 1", fontsize="16")
+    axs[2, 1].set_xlabel("num_iter 10", fontsize="16")
+    axs[2, 2].set_xlabel("num_iter 5", fontsize="16")
+    axs[2, 3].set_xlabel("num_iter 24", fontsize="16")
     
     # Create the legend and save
     axs[2, 3].legend(['Confidence', '1: Corr, 0: False'], loc='lower right')
