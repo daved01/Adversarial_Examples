@@ -486,14 +486,14 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
     axs[2].set_ylim(0, 1.1)
     axs[2].xaxis.set_tick_params(labelsize=13)
     axs[2].yaxis.set_tick_params(labelsize=13)
-    axs[2].set_xlabel("Epsilon * 255", fontsize=15)
+    axs[2].set_xlabel("Top 5 classes", fontsize=15)
 
     ## Fourth image: Adversarial image selected epsilon top 5 confidence
     axs[3].bar(samples, confidences_adv, color='orange')
     axs[3].set_ylim(0, 1.1)
     axs[3].xaxis.set_tick_params(labelsize=13)
     axs[3].yaxis.set_tick_params(labelsize=13)
-    axs[3].set_xlabel("Epsilon * 255", fontsize=15)
+    axs[3].set_xlabel("Top 5 classes", fontsize=15)
     
     if save_plot is True:
         fig.tight_layout()
