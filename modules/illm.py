@@ -106,8 +106,8 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     num_iterations -- Number of iterations to perform the ILLM with
     
     Returns:
-    conf_adv       -- Confidence of adversary
-    corr           -- Integer to indicate if predicted class with the adversary is correct (1) or not (0)
+    conf_adv       -- Top 5 confidence of adversary as list
+    corr_adv       -- Integer to indicate if predicted class with the adversary is correct (1) or not (0)
     class_name_adv -- Label of adversarial class
     '''
 
@@ -126,7 +126,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     else: 
         corr_adv = 0
         
-    conf_adv = confidences[0] 
+    conf_adv = confidences # Changed from first element to list on 07/13
     class_name_adv = idx_to_name(predicted_classes[0])
         
     return conf_adv, corr_adv, class_name_adv
@@ -423,6 +423,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     print_output      -- Prints stats if True
     '''  
 
+
     # Get data
     image_clean, class_index = data_loader.dataset[sample]
     image_clean.unsqueeze_(0)
@@ -433,7 +434,12 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     
     epsilons = [0, 0.5/255, 1/255, 2/255, 4/255, 8/255, 12/255, 16/255, 20/255]
 
+    # Check inputs
+    if epsilon_conf not in epsilons:
+        print("epsilon_conf is not valid!")
+
     conf_list = []
+    conf_dist_list = []
     acc_list = []
 
     print("Epsilon \t Iterations \t Accuracy \t Confidence \t Label")
@@ -443,23 +449,23 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
             num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
         else:
             num_iterations = fixed_num_iter
-        
+                                        
         conf_adv, acc, predicted_label = single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, alpha, sample, idx_to_name, num_iterations)
-        conf_list.append(conf_adv)
+        conf_list.append(conf_adv[0])
+        conf_dist_list.append(conf_adv)
         acc_list.append(acc)
         
         if print_output == True:
-            print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv) + "\t" + predicted_label) 
+            print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv[0]) + "\t" + predicted_label) 
     
     # Compute top 5 confidences for selected epsilon
     ## Number of iterations
-    if num_iterations == None:
-        num_iterations = int(np.min([np.ceil( (epsilon/alpha) + 4 ), np.ceil( 1.25 * epsilon/alpha ) ]))
-
-    image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
+    #if num_iterations == None:
+    #    num_iterations = int(np.min([np.ceil( (epsilon_conf/alpha) + 4 ), np.ceil( 1.25 * epsilon_conf/alpha ) ]))
+                         
+    #image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
     
-    _, confidences_adv, _ = predict(model, image_adv, class_index, return_grad=False)
-    
+    #_, confidences_adv, _ = predict(model, image_adv, class_index, return_grad=False)
      
     # Plot
     samples = [1, 2, 3, 4, 5]
@@ -489,7 +495,7 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
     axs[2].set_xlabel("Top 5 classes", fontsize=15)
 
     ## Fourth image: Adversarial image selected epsilon top 5 confidence
-    axs[3].bar(samples, confidences_adv, color='orange')
+    axs[3].bar(samples, conf_dist_list[epsilons.index(epsilon_conf)], color='orange')
     axs[3].set_ylim(0, 1.1)
     axs[3].xaxis.set_tick_params(labelsize=13)
     axs[3].yaxis.set_tick_params(labelsize=13)
