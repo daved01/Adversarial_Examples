@@ -456,16 +456,7 @@ def analyze_attack_BIM(data_loader, mean, std, model, predict, alpha, sample, ep
         
         if print_output == True:
             print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv[0]) + "\t" + predicted_label) 
-    
-    # Compute top 5 confidences for selected epsilon
-    ## Number of iterations
-    #if num_iterations == None:
-    #    num_iterations = int(np.min([np.ceil( (epsilon_conf/alpha) + 4 ), np.ceil( 1.25 * epsilon_conf/alpha ) ]))
-    #
-    #image_adv = attack_BIM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
-    
-   # _, confidences_adv, _ = predict(model, image_adv, class_index, return_grad=False)
-    
+       
      
     # Plot
     samples = [1, 2, 3, 4, 5]

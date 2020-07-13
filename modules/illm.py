@@ -126,7 +126,7 @@ def single_attack_stats_ILLM(data_loader, mean, std, model, predict, epsilon, al
     else: 
         corr_adv = 0
         
-    conf_adv = confidences # Changed from first element to list on 07/13
+    conf_adv = confidences
     class_name_adv = idx_to_name(predicted_classes[0])
         
     return conf_adv, corr_adv, class_name_adv
@@ -457,16 +457,8 @@ def analyze_attack_ILLM(data_loader, mean, std, model, predict, alpha, sample, e
         
         if print_output == True:
             print(str(epsilon*255) + "\t\t\t" + str(num_iterations) + "\t\t\t" + str(acc) + "\t" + str(conf_adv[0]) + "\t" + predicted_label) 
-    
-    # Compute top 5 confidences for selected epsilon
-    ## Number of iterations
-    #if num_iterations == None:
-    #    num_iterations = int(np.min([np.ceil( (epsilon_conf/alpha) + 4 ), np.ceil( 1.25 * epsilon_conf/alpha ) ]))
-                         
-    #image_adv = attack_ILLM(mean, std, model, image_clean, class_index, epsilon_conf, alpha, num_iterations=num_iterations)    
-    
-    #_, confidences_adv, _ = predict(model, image_adv, class_index, return_grad=False)
-     
+
+
     # Plot
     samples = [1, 2, 3, 4, 5]
     
