@@ -35,7 +35,7 @@ def attack_ILLM(mean, std, model, image, class_index, epsilon, alpha, num_iterat
     assert(class_index.shape == torch.Size([1]))
     
     # Initialize adversarial image as image according to equation 3.1
-    image_adver = image.clone()    
+    image_adver = image.clone()   
     
     # Calculate normalized range [0, 1] and convert them to tensors
     zero_normed = [-m/s for m,s in zip(mean, std)]
