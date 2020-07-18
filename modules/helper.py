@@ -170,3 +170,34 @@ def summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, 
     if folder is not None:
         f.tight_layout()
         f.savefig("plots/" + str(folder) + "/" + str(folder) + "-sample_" + str(int(idx)) + "_pair.png")
+        
+def normed_difference(img1, img2):
+    """
+    Returns the Frobenius normed difference between two pytorch tensor images. Applies the norm on the second dimension.
+    
+    Inputs:
+    img1 - Tensor of the first image of shape (1, 3, x0, x1)
+    img2 - Tensor of the second image of shape (1, 3, x0, x1)
+    
+    Returns:
+    Tensor of the normed difference (1, x0, x1)
+    """
+    
+    img_diff = img1 - img2
+    return torch.norm(img_diff, p='fro', dim=1)
+
+def avg_normed_difference(img1, img2):
+    """
+    Returns the Frobenius normed difference between two pytorch tensor images averaged across the entire image.
+    Applies the norm across the second dimension.
+    
+    Inputs:
+    img1 - Tensor of the first image of size (1, 3, x0, x1)
+    img2 - Tensor of the second image (1, 3, x0, x1)
+    
+    Returns:
+    The normed difference between the two images averaged over the entire image difference. Numpy array(1)
+    """
+    
+    img_normed = normed_difference(img1, img2)
+    return torch.mean(img_normed, dim=(1,2)).numpy()
