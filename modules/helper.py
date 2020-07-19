@@ -200,4 +200,4 @@ def avg_normed_difference(img1, img2):
     '''
     
     img_normed = normed_difference(img1, img2)
-    return torch.mean(img_normed, dim=(1,2)).detach().numpy()
+    return torch.mean(img_normed, dim=(1,2)).detach().cpu().numpy()

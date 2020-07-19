@@ -24,6 +24,8 @@ The attack methods are:
 
 - `01_Fast-Gradient-Sign-Method.ipynb`
 
-- `02_Fast-Basic-Iterative-Method.ipynb`
+- `02_Basic-Iterative-Method.ipynb`
 
 - `03_Iterative-Least-Likely-Class-Method.ipynb`
+
+- `04_DeepFool.ipynb`
