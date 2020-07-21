@@ -28,7 +28,6 @@ def idx_to_name(class_index):
     
     return name
 
-
 def show_tensor_image(tensor):
     '''
     De-normalizes an image as a tensor and converts it back into an 8bit image object.
@@ -65,7 +64,6 @@ def show_tensor_image(tensor):
     image = Image.fromarray(image)
         
     return image
-
 
 def predict(model, image, target_label, return_grad=False):
     '''
@@ -111,7 +109,6 @@ def predict(model, image, target_label, return_grad=False):
     confidences = prediction[predicted_classes]
     
     return predicted_classes, confidences, gradient
-
 
 def summarize_attack(image_clean, image_adv, conf_clean, conf_adv, label_clean, label_adv, label_target, idx,
                     folder=None):
@@ -201,3 +198,27 @@ def avg_normed_difference(img1, img2):
     
     img_normed = normed_difference(img1, img2)
     return torch.mean(img_normed, dim=(1,2)).detach().cpu().numpy()
+
+def denormalize_image(input_image, means, stds):
+    # Detach computation graph and remove batch dimension
+    image = input_image.detach().clone()    
+    image.squeeze_(dim=0)
+    
+    # Calculate means and stds for de-standardization process
+    means_denorm = list(map(lambda x,y: -1*x/y, means, stds))
+    stds_denorm = list(map(lambda y: 1/y, stds))
+    
+    # De-standardize tensor image
+    invert_preprocess = transforms.Compose([
+    transforms.Normalize(mean=means_denorm, std=stds_denorm),
+    ])
+      
+    output_image = invert_preprocess(image).detach()
+    
+    # De-normalize tensor image
+    output_image = output_image * 255
+    
+    # Add back the batch dimension
+    output_image = output_image.unsqueeze_(0)
+    
+    return output_image
