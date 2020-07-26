@@ -18,14 +18,20 @@ In the repository there is a notebook for each attack method. The notebook
 
 contains helper functions which are required in all other notebooks. Copies of these can be found in `modules/helper.py` and `modules/dataset.py`.
 
-Additionally, this notebook contains a data exploration and predictions on the clean data.
+The notebook
 
-The attack methods are:
+- `01_Data_Exploration.ipynb`
 
-- `01_Fast-Gradient-Sign-Method.ipynb`
+contains a data exploration and predictions on the clean data.
 
-- `02_Basic-Iterative-Method.ipynb`
+The implmenetation of the attack methods can be found in the folder `modules`. In the notebooks
 
-- `03_Iterative-Least-Likely-Class-Method.ipynb`
+- `02_Fast-Gradient-Sign-Method.ipynb`
 
-- `04_DeepFool.ipynb`
+- `03_Basic-Iterative-Method.ipynb`
+
+- `04_Iterative-Least-Likely-Class-Method.ipynb`
+
+- `05_DeepFool.ipynb`
+
+the attacks are explored.
